@@ -38,7 +38,7 @@ switch = "Pen"
 lastSwitch = time.time()
 lastSave = time.time()
 
-noiseth = 600
+noise = 600
 backgroundThreshold = 800
 
 backgroundobject = cv2.createBackgroundSubtractorMOG2(detectShadows=False)
@@ -92,19 +92,19 @@ def upperYellowLimitV(x):
     upperLimitYellow[2] = x
 
 
-cv2.namedWindow("filter color object")
-cv2.createTrackbar('Lower limit H', 'filter color object',
+cv2.namedWindow("blue mask")
+cv2.createTrackbar('Lower limit H', 'blue mask',
                    lower[0], 180, lowerLimitH)
-cv2.createTrackbar('Lower limit S', 'filter color object',
+cv2.createTrackbar('Lower limit S', 'blue mask',
                    lower[1], 255, lowerLimitS)
-cv2.createTrackbar('Lower limit V', 'filter color object',
+cv2.createTrackbar('Lower limit V', 'blue mask',
                    lower[2], 255, lowerLimitV)
 
-cv2.createTrackbar('Upper limit H', 'filter color object',
+cv2.createTrackbar('Upper limit H', 'blue mask',
                    upper[0], 180, upperLimitH)
-cv2.createTrackbar('Upper limit S', 'filter color object',
+cv2.createTrackbar('Upper limit S', 'blue mask',
                    upper[1], 255, upperLimitS)
-cv2.createTrackbar('Upper limit V', 'filter color object',
+cv2.createTrackbar('Upper limit V', 'blue mask',
                    upper[2], 255, upperLimitV)
 
 
@@ -125,7 +125,7 @@ cv2.createTrackbar('Upper limit V', 'yellow color',
 
 while True:
     _, frame = cam.read()
-    frame = cv2.resize(frame, (640, 480), fx=0, fy=0,
+    frame = cv2.resize(frame, (1080, 720), fx=0, fy=0,
                        interpolation=cv2.INTER_CUBIC)
     frame = cv2.flip(frame, 1)
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -135,10 +135,10 @@ while True:
 
     #Write or eraser
     top_left = frame[0:50, 0:50]
-    fgmask = backgroundobject.apply(top_left)
+    switchToolMask = backgroundobject.apply(top_left)
     mask = cv2.inRange(hsv, lower, upper)
 
-    switch_thresh = np.sum(fgmask == 255)
+    switch_thresh = np.sum(switchToolMask == 255)
 
     if switch_thresh > backgroundThreshold and (time.time() - lastSwitch) > 1:
         print('switch')
@@ -159,11 +159,11 @@ while True:
     mask = cv2.morphologyEx(
         mask, cv2.MORPH_CLOSE, openingKernel, iterations=1)
 
-    cv2.imshow("mask", mask)
+    cv2.imshow("blue mask", mask)
     contours, hierarchy = cv2.findContours(
         mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    if contours and cv2.contourArea(max(contours, key=cv2.contourArea)) > noiseth:
+    if contours and cv2.contourArea(max(contours, key=cv2.contourArea)) > noise:
         c = max(contours, key=cv2.contourArea)
         x2, y2, w, h = cv2.boundingRect(c)
         if(x1 == 0 and y1 == 0):
@@ -202,10 +202,10 @@ while True:
 
     maskYellow = cv2.erode(maskYellow, openingKernel, iterations=4)
     maskYellow = cv2.morphologyEx(
-        maskYellow, cv2.MORPH_CLOSE, openingKernel, iterations=1)
+        maskYellow, cv2.MORPH_CLOSE, openingKernel, iterations=4)
     contoursYellow, hierarchyYellow = cv2.findContours(
         maskYellow, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if contoursYellow and cv2.contourArea(max(contoursYellow, key=cv2.contourArea)) > noiseth:
+    if contoursYellow and cv2.contourArea(max(contoursYellow, key=cv2.contourArea)) > noise:
         cYellow = max(contoursYellow, key=cv2.contourArea)
         x2Yellow, y2Yellow, wYellow, hYellow = cv2.boundingRect(cYellow)
         if(x1Yellow == 0 and y1Yellow == 0):
